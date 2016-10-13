@@ -1,67 +1,77 @@
-import array
+from heapq import *
 
 
-def swap(arr, frm, to):
-    arr[frm], arr[to] = arr[to], arr[frm]
+REMOVED = "<item is removed>"
+frontier_map = {}
+
+class node_ref:
+    def __init__(self, total_cost, node):
+        self.total_cost = total_cost
+        self.node = node
+
+    # TODO: override other cmp functions
+    def __lt__(self, other):
+        return self.total_cost < other.total_cost
 
 
-def partition(arr, l, r):
-    pivot_idx = median(arr, l, (l+r)/2, r)#r
-    swap(arr, l, pivot_idx)
-    pivot = arr[l]
-    i = l+1
-
-    for j in range(l+1, r+1):
-        if arr[j]<pivot:
-            swap(arr, j, i)
-            i += 1
-
-    swap(arr, l, i-1)
-    return i-1
+def extract_min(frontier):
+    while frontier:
+        item = heappop(frontier)
+        if item.node != REMOVED:
+            del frontier_map[item.node]
+            return item
 
 
-def median(arr, l, m, r):
-    if arr[l] <= arr[m] <= arr[r]: return m
-    if arr[l] <= arr[r] <= arr[m]: return r
-    if arr[m] <= arr[l] <= arr[r]: return l
-    if arr[m] <= arr[r] <= arr[l]: return r
-    if arr[r] <= arr[l] <= arr[m]: return l
-    if arr[r] <= arr[m] <= arr[l]: return m
+def update_frontier(adj_list, frontier, w, X):
+    #print adj_list[v]
+    for neighbor in adj_list[w]:
+        node, cost = int(neighbor[0]), int(neighbor[1])
+        if node not in X:
+            item = node_ref(A[w] + cost, node)
+            if node in frontier_map:
+                if frontier_map[node].total_cost > item.total_cost:
+                    frontier_map[node].node = REMOVED
+                    frontier_map[node] = item
+                    heappush(frontier, item)
+            else:
+                frontier_map[node] = item
+                heappush(frontier, item)
 
 
-def quick_sort_internal(arr, l, r):
-    total_cmp_number = 0
-    if l<r:
-        partition_boundary = partition(arr, l, r)
-        total_cmp_number += quick_sort_internal(arr, l, partition_boundary-1)
-        total_cmp_number += quick_sort_internal(arr, partition_boundary+1, r)
-        total_cmp_number += (partition_boundary-1 - l)
-        total_cmp_number += (r - partition_boundary)
-    return total_cmp_number
-
-
-def quick_sort(arr):
-    total_cmp_number = quick_sort_internal(arr, 0, len(arr)-1)
-    return arr, total_cmp_number
+def dijkstra_shortest_pathes(adj_list, A, frontier, X):
+    while(len(X) < len(adj_list)):
+        item = extract_min(frontier)
+        w = item.node
+        A[w] = item.total_cost
+        X.append(w)
+        update_frontier(adj_list, frontier, w, X)
 
 
 if __name__ == '__main__':
-    f = open("/home/db/Work/Projects/Stanford_CS_Algo/week_05/dijkstraData.txt")
+    f = open("dijkstraData.txt")
+    line_lists = [line.split() for line in f.readlines()]
 
-    for line in f.read().split():
-        print line
+    adj_list = {}
+    for elem in line_lists:
+        adj_list[int(elem[0])] = [pair.split(',') for pair in elem[1:]]
 
-    # line_lists = [line.split() for line in f.read().split()]
-    # for elem in line_lists:
-    #     print elem[0], elem[1:]
-    # adj_list = {};
+    # print adj_list
+    # adj_list[1] = [[2,1],[3,13]]
+    # adj_list[2] = [[3,2],[4,4],[5,7]]
+    # adj_list[3] = [[4,1]]
+    # adj_list[4] = [[5,2]]
+    # adj_list[5] = []
 
-    # arr = array.array("i", [int(num) for num in f.read().split()])
-    # #arr = array.array("i", [1,2,3,4,5,6,7,8,9,10])
+    A = [0] * (len(adj_list)+1)
+    s_node = 1
+    frontier = []
+    A[s_node] = 0
+    X = [s_node]
 
-    # arr, total_cmp_number = quick_sort(arr)
-
-    # assert(all(arr[i]<arr[i+1] for i in xrange(len(arr)-1)))
-
-    # print total_cmp_number
-
+    update_frontier(adj_list, frontier, s_node, X)
+    dijkstra_shortest_pathes(adj_list, A, frontier, X)
+    # print A
+    result = "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d" % \
+          (A[7],A[37],A[59],A[82],A[99],A[115],A[133],A[165],A[188],A[197])
+    print result
+    assert result == "2599,2610,2947,2052,2367,2399,2029,2442,2505,3068"
